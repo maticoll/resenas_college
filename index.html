@@ -262,6 +262,29 @@
       margin-top: 5px;
     }
 
+    /* ── Text inputs ─────────────────────────────── */
+    .text-input {
+      width: 100%;
+      border: 2px solid var(--c-border);
+      border-radius: var(--r-md);
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: var(--font);
+      font-weight: 600;
+      color: var(--c-text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: var(--c-surface);
+      margin-bottom: 12px;
+    }
+
+    .text-input:focus {
+      border-color: var(--c-primary);
+      box-shadow: 0 0 0 3px rgba(1,209,183,0.15);
+    }
+
+    .text-input::placeholder { color: var(--c-text-muted); font-weight: 600; }
+
     /* ── Textarea ────────────────────────────────── */
     textarea {
       width: 100%;
@@ -540,17 +563,46 @@
   <div class="card-body">
 
     <!-- Progress -->
-    <div class="progress-wrap" id="progressBar"
+    <div class="progress-wrap" id="progressBar" style="display:none"
          role="progressbar" aria-valuemin="1" aria-valuemax="4" aria-valuenow="1"
          aria-label="Progreso del formulario">
-      <div class="progress-segment active" id="dot-1"></div>
+      <div class="progress-segment" id="dot-1"></div>
       <div class="progress-segment" id="dot-2"></div>
       <div class="progress-segment" id="dot-3"></div>
       <div class="progress-segment" id="dot-4"></div>
     </div>
 
+    <!-- STEP 0: Nombre y apellido -->
+    <div class="step visible" id="step0" role="group" aria-labelledby="q0-label">
+      <div class="step-question" id="q0-label">¿Cómo te llamás?</div>
+      <label for="inputNombre" class="sr-only">Nombre</label>
+      <input
+        type="text"
+        id="inputNombre"
+        class="text-input"
+        placeholder="Tu nombre"
+        oninput="updateNombre()"
+        aria-required="true"
+        autocomplete="given-name"
+      />
+      <label for="inputApellido" class="sr-only">Apellido</label>
+      <input
+        type="text"
+        id="inputApellido"
+        class="text-input"
+        placeholder="Tu apellido"
+        oninput="updateNombre()"
+        aria-required="true"
+        autocomplete="family-name"
+      />
+      <button class="btn btn-primary" id="btnStep0" disabled aria-disabled="true" onclick="goToStep(1)">
+        Continuar
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
     <!-- STEP 1: NPS -->
-    <div class="step visible" id="step1" role="group" aria-labelledby="q1-label">
+    <div class="step" id="step1" role="group" aria-labelledby="q1-label">
       <div class="step-label">Pregunta 1 de 4</div>
       <div class="step-question" id="q1-label">¿Como fue tu experiencia viajando con College?</div>
       <div class="nps-grid" id="npsGrid" role="radiogroup" aria-label="Puntuación del 1 al 10">
@@ -733,8 +785,18 @@
   const INTERNAL_EMAIL    = 'college.uy@gmail.com'; // ⚠️ Completar
 
   // ── Estado ─────────────────────────────────────────────────────────────────
-  const answers = { nps: 0, q2: '', q3: '', q4: '' };
-  let currentStep = 1;
+  const answers = { nombre: '', apellido: '', nps: 0, q2: '', q3: '', q4: '' };
+  let currentStep = 0;
+
+  // ── Nombre y apellido ──────────────────────────────────────────────────────
+  function updateNombre() {
+    answers.nombre   = document.getElementById('inputNombre').value.trim();
+    answers.apellido = document.getElementById('inputApellido').value.trim();
+    const btn = document.getElementById('btnStep0');
+    const filled = answers.nombre.length > 0 && answers.apellido.length > 0;
+    btn.disabled = !filled;
+    btn.setAttribute('aria-disabled', filled ? 'false' : 'true');
+  }
 
   // ── NPS ────────────────────────────────────────────────────────────────────
   function selectNPS(value) {
@@ -761,11 +823,9 @@
 
   // ── Navegación ─────────────────────────────────────────────────────────────
   function goToStep(n) {
-    const fromId = 'step' + currentStep;
-    const toId   = 'step' + n;
-    document.getElementById(fromId).classList.remove('visible');
+    document.getElementById('step' + currentStep).classList.remove('visible');
     currentStep = n;
-    const next = document.getElementById(toId);
+    const next = document.getElementById('step' + n);
     next.classList.add('visible');
     updateProgress(n);
     const heading = next.querySelector('.step-question');
@@ -774,7 +834,13 @@
   }
 
   function updateProgress(step) {
-    document.getElementById('progressBar').setAttribute('aria-valuenow', step);
+    const bar = document.getElementById('progressBar');
+    if (step === 0) {
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = '';
+    bar.setAttribute('aria-valuenow', step);
     for (let i = 1; i <= 4; i++) {
       const seg = document.getElementById('dot-' + i);
       seg.className = i < step  ? 'progress-segment done'
@@ -816,7 +882,7 @@
   async function generateReviewWithAI() {
     const systemPrompt = `Eres un asistente experto en redactar reseñas de Google para College Uruguay, una empresa de viajes de egresados uruguaya muy querida por sus clientes.
 
-El viajero respondió las siguientes preguntas:
+El viajero se llama ${answers.nombre} ${answers.apellido} y respondió las siguientes preguntas:
 - Puntuación del viaje (1-10): ${answers.nps}
 - ¿Qué fue lo que más disfrutaste?: ${answers.q2}
 - ¿Qué mejorarías?: ${answers.q3}
@@ -890,6 +956,7 @@ Devolvé SOLO el texto de la reseña, sin comillas ni formato adicional.`;
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },
     //   body: JSON.stringify({
+    //     nombre: answers.nombre + ' ' + answers.apellido,
     //     nps: answers.nps,
     //     disfrutaste: answers.q2,
     //     mejorarias: answers.q3,
