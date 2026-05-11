@@ -778,11 +778,13 @@
   </div><!-- /card-body -->
 </div><!-- /card -->
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script>
   // ── Configuración ──────────────────────────────────────────────────────────
-  const OPENAI_API_KEY = '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';
+  // OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY y ADMIN_PASSWORD vienen de config.js
   const GOOGLE_REVIEW_URL = 'https://g.page/r/CfX74HNdQwv6EBM/review';
-  const INTERNAL_EMAIL    = 'college.uy@gmail.com'; // ⚠️ Completar
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ── Estado ─────────────────────────────────────────────────────────────────
   const answers = { nombre: '', apellido: '', nps: 0, q2: '', q3: '', q4: '' };
@@ -950,20 +952,20 @@ Devolvé SOLO el texto de la reseña, sin comillas ni formato adicional.`;
     });
   }
 
-  // ── Feedback interno ───────────────────────────────────────────────────────
-  function sendInternalFeedback() {
-    // fetch('https://formspree.io/f/meenvndl', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     nombre: answers.nombre + ' ' + answers.apellido,
-    //     nps: answers.nps,
-    //     disfrutaste: answers.q2,
-    //     mejorarias: answers.q3,
-    //     comentario: answers.q4 || '(sin comentario)',
-    //     timestamp: new Date().toISOString()
-    //   })
-    // }).catch(err => console.error('Formspree error:', err));
+  // ── Feedback interno (guarda en Supabase) ─────────────────────────────────
+  async function sendInternalFeedback() {
+    try {
+      await sb.from('reviews').insert({
+        nombre:   answers.nombre,
+        apellido: answers.apellido,
+        nps:      answers.nps,
+        q2:       answers.q2,
+        q3:       answers.q3,
+        q4:       answers.q4 || null
+      });
+    } catch (err) {
+      console.error('Supabase error:', err);
+    }
   }
 </script>
 

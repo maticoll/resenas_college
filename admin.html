@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — College Uruguay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <style>
+    :root {
+      --c-primary:       #01d1b7;
+      --c-primary-dark:  #00b8a0;
+      --c-primary-light: #f0fdfb;
+      --c-border:        #d1faf5;
+      --c-bg:            #f0fdfb;
+      --c-surface:       #ffffff;
+      --c-text:          #1a1a2e;
+      --c-text-sub:      #4b5563;
+      --c-text-muted:    #9ca3af;
+      --c-danger:        #ef4444;
+      --c-danger-bg:     #fef2f2;
+      --c-warn:          #f59e0b;
+      --c-warn-bg:       #fffbeb;
+      --font: 'Nunito', system-ui, sans-serif;
+      --r-sm: 8px; --r-md: 14px; --r-lg: 20px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--c-bg);
+      color: var(--c-text);
+      min-height: 100dvh;
+    }
+
+    /* ── Login gate ── */
+    #loginGate {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--c-surface);
+      border-radius: var(--r-lg);
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 8px 40px rgba(1,209,183,0.15);
+      text-align: center;
+    }
+
+    .login-card h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .login-card p  { font-size: 13px; color: var(--c-text-muted); font-weight: 600; margin-bottom: 28px; }
+
+    .login-input {
+      width: 100%;
+      border: 2px solid var(--c-border);
+      border-radius: var(--r-md);
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: var(--font);
+      font-weight: 600;
+      color: var(--c-text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 14px;
+    }
+
+    .login-input:focus {
+      border-color: var(--c-primary);
+      box-shadow: 0 0 0 3px rgba(1,209,183,0.15);
+    }
+
+    .login-error {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--c-danger);
+      margin-bottom: 10px;
+      min-height: 20px;
+    }
+
+    /* ── Admin layout ── */
+    #adminPanel { display: none; }
+
+    .topbar {
+      background: linear-gradient(135deg, #00c4ab 0%, #01d1b7 100%);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #fff;
+    }
+
+    .topbar-title { font-size: 18px; font-weight: 800; }
+    .topbar-sub   { font-size: 12px; font-weight: 600; opacity: 0.8; margin-top: 2px; }
+
+    .topbar-logout {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .topbar-logout:hover { background: rgba(255,255,255,0.25); }
+
+    .main-content { padding: 28px 24px; max-width: 960px; margin: 0 auto; }
+
+    /* ── Stats ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--c-surface);
+      border-radius: var(--r-md);
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .stat-value { font-size: 32px; font-weight: 900; color: var(--c-text); }
+    .stat-label { font-size: 12px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    /* ── Reviews list ── */
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--c-text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .review-card {
+      background: var(--c-surface);
+      border-radius: var(--r-md);
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border-left: 4px solid var(--c-danger);
+    }
+
+    .review-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 12px;
+    }
+
+    .reviewer-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--c-text);
+    }
+
+    .reviewer-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c-text-muted);
+      margin-top: 3px;
+    }
+
+    .nps-badge {
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .nps-badge.low  { background: var(--c-danger-bg); color: var(--c-danger); }
+    .nps-badge.mid  { background: var(--c-warn-bg);   color: var(--c-warn); }
+
+    .answers-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .answer-row {
+      background: var(--c-bg);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+    }
+
+    .answer-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-text-muted);
+      margin-bottom: 4px;
+    }
+
+    .answer-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--c-text-sub);
+      line-height: 1.5;
+    }
+
+    .answer-text.empty { color: var(--c-text-muted); font-style: italic; }
+
+    /* ── Empty / Loading ── */
+    .state-msg {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--c-text-muted);
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    /* ── Shared button ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 13px 24px;
+      border-radius: var(--r-md);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--c-primary);
+      color: #fff;
+      width: 100%;
+      box-shadow: 0 4px 16px rgba(1,209,183,0.35);
+    }
+
+    .btn-primary:hover { background: var(--c-primary-dark); transform: translateY(-1px); }
+
+    .refresh-btn {
+      background: var(--c-surface);
+      border: 2px solid var(--c-border);
+      color: var(--c-text-sub);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .refresh-btn:hover { border-color: var(--c-primary); color: var(--c-primary); }
+  </style>
+</head>
+<body>
+
+<!-- ── Login gate ── -->
+<div id="loginGate">
+  <div class="login-card">
+    <div style="font-size:36px; margin-bottom:12px;">🔒</div>
+    <h1>Panel Admin</h1>
+    <p>College Uruguay — Reseñas internas</p>
+    <input
+      type="password"
+      id="passwordInput"
+      class="login-input"
+      placeholder="Contraseña"
+      onkeydown="if(event.key==='Enter') checkPassword()"
+      autocomplete="current-password"
+    />
+    <div class="login-error" id="loginError"></div>
+    <button class="btn btn-primary" onclick="checkPassword()">Entrar</button>
+  </div>
+</div>
+
+<!-- ── Admin panel ── -->
+<div id="adminPanel">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Panel de Reseñas</div>
+      <div class="topbar-sub">College Uruguay — Solo uso interno</div>
+    </div>
+    <button class="topbar-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <div class="main-content">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">Reseñas negativas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAvgNPS">—</div>
+        <div class="stat-label">NPS promedio</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statToday">—</div>
+        <div class="stat-label">Hoy</div>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div class="section-title" style="margin-bottom:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Feedback negativo (NPS 1–5)
+      </div>
+      <button class="refresh-btn" onclick="loadReviews()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Actualizar
+      </button>
+    </div>
+
+    <div id="reviewsList">
+      <div class="state-msg">Cargando...</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  function checkPassword() {
+    const input = document.getElementById('passwordInput').value;
+    if (input === ADMIN_PASSWORD) {
+      sessionStorage.setItem('admin_auth', '1');
+      document.getElementById('loginGate').style.display  = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      loadReviews();
+    } else {
+      document.getElementById('loginError').textContent = 'Contraseña incorrecta';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem('admin_auth');
+    document.getElementById('loginGate').style.display  = 'flex';
+    document.getElementById('adminPanel').style.display = 'none';
+  }
+
+  // Auto-login si ya estaba autenticado en esta sesión
+  if (sessionStorage.getItem('admin_auth') === '1') {
+    document.getElementById('loginGate').style.display  = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+  }
+
+  // ── Supabase ──────────────────────────────────────────────────────────────
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function loadReviews() {
+    document.getElementById('reviewsList').innerHTML = '<div class="state-msg">Cargando...</div>';
+
+    const { data, error } = await sb
+      .from('reviews')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      document.getElementById('reviewsList').innerHTML =
+        `<div class="state-msg" style="color:#ef4444">Error al cargar: ${error.message}</div>`;
+      return;
+    }
+
+    updateStats(data);
+
+    if (!data || data.length === 0) {
+      document.getElementById('reviewsList').innerHTML =
+        '<div class="state-msg">No hay reseñas negativas aún.</div>';
+      return;
+    }
+
+    document.getElementById('reviewsList').innerHTML = data.map(renderCard).join('');
+  }
+
+  function updateStats(data) {
+    const total = data.length;
+    const avg   = total ? (data.reduce((s, r) => s + r.nps, 0) / total).toFixed(1) : '—';
+    const today = data.filter(r => {
+      const d = new Date(r.created_at);
+      const n = new Date();
+      return d.toDateString() === n.toDateString();
+    }).length;
+
+    document.getElementById('statTotal').textContent  = total;
+    document.getElementById('statAvgNPS').textContent = avg;
+    document.getElementById('statToday').textContent  = today;
+  }
+
+  function renderCard(r) {
+    const date     = new Date(r.created_at);
+    const dateStr  = date.toLocaleDateString('es-UY', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const badgeClass = r.nps <= 3 ? 'nps-badge low' : 'nps-badge mid';
+
+    const q2 = r.q2 || null;
+    const q3 = r.q3 || null;
+    const q4 = r.q4 || null;
+
+    return `
+    <div class="review-card">
+      <div class="review-card-header">
+        <div>
+          <div class="reviewer-name">${esc(r.nombre)} ${esc(r.apellido)}</div>
+          <div class="reviewer-date">${dateStr}</div>
+        </div>
+        <span class="${badgeClass}">NPS ${r.nps}</span>
+      </div>
+      <div class="answers-grid">
+        <div class="answer-row">
+          <div class="answer-label">¿Qué fue lo que más disfrutaste?</div>
+          <div class="answer-text ${q2 ? '' : 'empty'}">${q2 ? esc(q2) : 'Sin respuesta'}</div>
+        </div>
+        <div class="answer-row">
+          <div class="answer-label">¿Qué mejorarías?</div>
+          <div class="answer-text ${q3 ? '' : 'empty'}">${q3 ? esc(q3) : 'Sin respuesta'}</div>
+        </div>
+        ${q4 ? `
+        <div class="answer-row">
+          <div class="answer-label">Comentario adicional</div>
+          <div class="answer-text">${esc(q4)}</div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Cargar si ya está autenticado
+  if (sessionStorage.getItem('admin_auth') === '1') loadReviews();
+</script>
+</body>
+</html>
