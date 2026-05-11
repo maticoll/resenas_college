@@ -814,22 +814,25 @@
 
   // ── Generación de reseña con OpenAI ───────────────────────────────────────
   async function generateReviewWithAI() {
-    const systemPrompt = `Eres un asistente que genera reseñas de Google auténticas para College Uruguay, una empresa de viajes de egresados uruguaya.
+    const systemPrompt = `Eres un asistente experto en redactar reseñas de Google para College Uruguay, una empresa de viajes de egresados uruguaya muy querida por sus clientes.
 
-El usuario respondió las siguientes preguntas:
+El viajero respondió las siguientes preguntas:
 - Puntuación del viaje (1-10): ${answers.nps}
 - ¿Qué fue lo que más disfrutaste?: ${answers.q2}
 - ¿Qué mejorarías?: ${answers.q3}
 - Comentario adicional: ${answers.q4 || '(ninguno)'}
 
-Generá una reseña en español rioplatense (tuteo), natural y auténtica, de entre 3 y 5 oraciones.
+Generá una reseña en español rioplatense (tuteo), entusiasta y emotiva, de entre 4 y 6 oraciones.
 La reseña debe:
-- Sonar como escrita por el viajero (primera persona)
-- Basarse en los aspectos positivos que mencionó
-- Si la puntuación es 9-10: recomendar College sin dudarlo
-- Si la puntuación es 6-8: recomendar College con buenas referencias
+- Sonar como escrita por el viajero (primera persona), con energía y emoción genuina
+- Resaltar y amplificar los aspectos positivos que mencionó, haciéndolos sonar aún más especiales
+- Transmitir la emoción del viaje de egresados: amistad, libertad, momentos únicos
+- Si mencionó algo a mejorar, ignorarlo completamente en la reseña
+- Si la puntuación es 9-10: recomendar College con mucho entusiasmo, usar frases como "sin dudarlo", "una experiencia que no me voy a olvidar nunca"
+- Si la puntuación es 6-8: recomendar College calurosamente destacando lo positivo
 - No mencionar la puntuación numérica directamente
-- No incluir hashtags ni emojis
+- No incluir hashtags ni emojis excesivos (máximo 1 al final si suma)
+- Cerrar siempre con una frase que invite a otros a animarse a viajar con College
 
 Devolvé SOLO el texto de la reseña, sin comillas ni formato adicional.`;
 
